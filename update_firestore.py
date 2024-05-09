@@ -38,28 +38,35 @@ doping_substances = pd.read_csv(  # break up long string with r''
     r'ee8f9b14-1eee-494a-b7f5-6777a8232dcb/download'
 )
 
-# Fill empty cells with an empty string
-doping_substances.fillna('', inplace=True)
-
 # Drop products that are not currently registered
-filtered_doping_substances = doping_substances[doping_substances['authorisation_no'].isin(
+doping_substances = doping_substances[doping_substances['authorisation_no'].isin(
     human_products['authorisation_no'])]
 
 # Add rows with medication that do not have information about use in sports
 missing_medication = human_products[~human_products['authorisation_no']
-                                    .isin(filtered_doping_substances['authorisation_no'])]
-filtered_twice_doping_substances = pd.concat(
-    [filtered_doping_substances, missing_medication], ignore_index=True)
+                                    .isin(doping_substances['authorisation_no'])]
+doping_substances = pd.concat(
+    [doping_substances, missing_medication], ignore_index=True)
 
 # Fill empty cells with an empty string
-filtered_twice_doping_substances.fillna('', inplace=True)
+doping_substances.fillna('', inplace=True)
 
-# print(human_products.shape)  # pylint: disable=E1101
-# print(doping_substances.shape)
-# print(filtered_doping_substances.shape)
-# print(filtered_twice_doping_substances.shape)
-# print(filtered_twice_doping_substances.shape)
-# filtered_twice_doping_substances.to_csv('file.csv', index=False)
+# Try opening dataframe with information that was prepared the last time script was ran
+# If file is found, then create dataframe with only newly added or recently edited medication
+# If no file is found, then upload to Firestore the whole file
+try:
+    saved_in_firestore = pd.read_csv('saved_in_firestore.csv')
+    saved_in_firestore.fillna('', inplace=True)
+    df_to_upload = pd.concat([saved_in_firestore, doping_substances]).drop_duplicates(
+        keep=False, ignore_index=True)
+    df_to_upload.drop_duplicates(
+        subset=['authorisation_no'],
+        ignore_index=True,
+        inplace=True,
+        keep='last'
+    )
+except FileNotFoundError:
+    df_to_upload = doping_substances
 
 # Initialize Firebase app
 cred = credentials.Certificate(
@@ -74,9 +81,12 @@ collection_ref = db.collection('drug_reference')
 
 # Write data to Firestore
 collection_ref = db.collection('drug_reference')
-for row in filtered_twice_doping_substances.to_dict(orient='records'):
+for row in df_to_upload.to_dict(orient='records'):
     doc_id = row['authorisation_no'].replace('/', '.')
     del row['authorisation_no']  # Remove ID from data dict
     collection_ref.document(doc_id).set(row)
 
 print('Data written to Firestore!')
+
+# Save dataframe with latest information about medication use in sports to file
+doping_substances.to_csv('saved_in_firestore.csv', index=False)
