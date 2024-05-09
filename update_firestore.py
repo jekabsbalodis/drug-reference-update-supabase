@@ -13,6 +13,10 @@ human_products.drop_duplicates(  # pylint: disable=E1101
     subset=['authorisation_no'],
     ignore_index=True,
     inplace=True)
+human_products.drop_duplicates(  # pylint: disable=E1101
+    subset=['medicine_name', 'pharmaceutical_form_lv'],
+    ignore_index=True,
+    inplace=True)
 
 # Drop columns that are not needed
 human_products_columns = ['medicine_name',
