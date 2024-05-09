@@ -58,17 +58,12 @@ filtered_twice_doping_substances.fillna('', inplace=True)
 # print(doping_substances.shape)
 # print(filtered_doping_substances.shape)
 # print(filtered_twice_doping_substances.shape)
-print(filtered_twice_doping_substances.shape)
+# print(filtered_twice_doping_substances.shape)
 # filtered_twice_doping_substances.to_csv('file.csv', index=False)
-
-ten_rows = filtered_twice_doping_substances.head()
-# print(ten_rows.shape)
-to_fifteen = filtered_twice_doping_substances.loc[17712:17726]
-# print(to_fifteen.shape)
 
 # Initialize Firebase app
 cred = credentials.Certificate(
-    'drug-reference-aeed3-firebase-adminsdk-1c0l8-709a3f319a.json')
+    'drug-reference-firebase-adminsdk.json')
 firebase_admin.initialize_app(cred)
 
 # Get firestore db instance
@@ -78,7 +73,7 @@ db = firestore.client()
 collection_ref = db.collection('drug_reference')
 
 # Write data to Firestore
-collection_ref = db.collection('drug_reference')  # Replace with your collection name
+collection_ref = db.collection('drug_reference')
 for row in filtered_twice_doping_substances.to_dict(orient='records'):
     doc_id = row['authorisation_no'].replace('/', '.')
     del row['authorisation_no']  # Remove ID from data dict
