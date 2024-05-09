@@ -68,25 +68,29 @@ try:
 except FileNotFoundError:
     df_to_upload = doping_substances
 
-# Initialize Firebase app
-cred = credentials.Certificate(
-    'drug-reference-firebase-adminsdk.json')
-firebase_admin.initialize_app(cred)
+df_to_upload.to_csv('to_upload.csv', index=False)
 
-# Get firestore db instance
-db = firestore.client()
+# # Initialize Firebase app
+# cred = credentials.Certificate(
+#     'drug-reference-firebase-adminsdk.json')
+# firebase_admin.initialize_app(cred)
 
-# Reference to Firestore collection
-collection_ref = db.collection('drug_reference')
+# # Get firestore db instance
+# db = firestore.client()
 
-# Write data to Firestore
-collection_ref = db.collection('drug_reference')
-for row in df_to_upload.to_dict(orient='records'):
-    doc_id = row['authorisation_no'].replace('/', '.')
-    del row['authorisation_no']  # Remove ID from data dict
-    collection_ref.document(doc_id).set(row)
+# # Reference to Firestore collection
+# collection_ref = db.collection('drug_reference')
 
-print('Data written to Firestore!')
+# # Write data to Firestore
+# collection_ref = db.collection('drug_reference')
+# for row in df_to_upload.to_dict(orient='records'):
+#     doc_id = row['authorisation_no'].replace('/', '.')
+#     del row['authorisation_no']  # Remove ID from data dict
+#     collection_ref.document(doc_id).set(row)
+if not df_to_upload.empty:
+    print('Data written to Firestore!')
+else:
+    print('Nothing to write to Firestore')
 
 # Save dataframe with latest information about medication use in sports to file
 doping_substances.to_csv('saved_in_firestore.csv', index=False)
