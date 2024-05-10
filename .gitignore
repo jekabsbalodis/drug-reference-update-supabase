@@ -161,3 +161,6 @@ cython_debug/
 
 # Firebase
 *firebase-adminsdk*
+
+# .csv files
+*.csv
