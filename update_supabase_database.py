@@ -1,7 +1,7 @@
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+import os
 import pandas as pd
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
 # Download drug register
 human_products = pd.read_json(
@@ -11,10 +11,6 @@ human_products = pd.read_json(
 # Drop duplicate values
 human_products.drop_duplicates(  # pylint: disable=E1101
     subset=['authorisation_no'],
-    ignore_index=True,
-    inplace=True)
-human_products.drop_duplicates(  # pylint: disable=E1101
-    subset=['medicine_name', 'pharmaceutical_form_lv'],
     ignore_index=True,
     inplace=True)
 
@@ -27,9 +23,27 @@ human_products.drop(  # pylint: disable=E1101
     columns=[col for col in human_products if col not in human_products_columns],
     inplace=True)
 
+
+# Split drug register between EU registerd and other drugs
+human_products_non_eu = human_products.drop(  # pylint: disable=E1101
+    human_products[human_products['authorisation_no'].str.startswith('EU/')].index)
+
+human_products_eu = human_products.drop(  # pylint: disable=E1101
+    human_products[~human_products['authorisation_no'].str.startswith('EU/')].index)
+
+
+# Drop duplicate values from EU registered medication
+human_products_eu.drop_duplicates(  # pylint: disable=E1101
+    subset=['medicine_name', 'pharmaceutical_form_lv'],
+    ignore_index=True,
+    inplace=True)
+
+# Combine drug register back
+human_products = pd.concat(
+    [human_products_non_eu, human_products_eu], ignore_index=True)
+
 # Fill empty cells with an empty string
 human_products.fillna('', inplace=True)  # pylint: disable=E1101
-
 
 # Download file with information on medication use in sports
 doping_substances = pd.read_csv(  # break up long string with r''
@@ -52,11 +66,11 @@ doping_substances.fillna('', inplace=True)
 
 # Try opening dataframe with information that was prepared the last time script was ran
 # If file is found, then create dataframe with only newly added or recently edited medication
-# If no file is found, then upload to Firestore the whole file
+# If no file is found, then upload to Supabase the whole file
 try:
-    saved_in_firestore = pd.read_csv('saved_in_firestore.csv')
-    saved_in_firestore.fillna('', inplace=True)
-    df_to_upload = pd.concat([saved_in_firestore, doping_substances]).drop_duplicates(
+    saved_in_supabase = pd.read_csv('saved_in_supabase.csv')
+    saved_in_supabase.fillna('', inplace=True)
+    df_to_upload = pd.concat([saved_in_supabase, doping_substances]).drop_duplicates(
         keep=False, ignore_index=True)
     df_to_upload.drop_duplicates(
         subset=['authorisation_no'],
@@ -69,27 +83,21 @@ except FileNotFoundError:
 
 df_to_upload.to_csv('to_upload.csv', index=False)
 
-# Initialize Firebase app
-cred = credentials.Certificate(
-    'drug-reference-firebase-adminsdk.json')
-firebase_admin.initialize_app(cred)
+# Initialize Supabase client
+load_dotenv('.env')
 
-# Get firestore db instance
-db = firestore.client()
+url = os.environ.get('SUPABASE_URL')
+key = os.environ.get('SUPABASE_KEY1') + \
+    os.environ.get('SUPABASE_KEY2')+os.environ.get('SUPABASE_KEY3')
+supabase: Client = create_client(url, key)
 
-# Reference to Firestore collection
-collection_ref = db.collection('drug_reference')
-
-# Write data to Firestore
-collection_ref = db.collection('drug_reference')
+# Write data to Supabase
 if not df_to_upload.empty:
-    for row in df_to_upload.to_dict(orient='records'):
-        doc_id = row['authorisation_no'].replace('/', '.')
-        del row['authorisation_no']  # Remove ID from data dict
-        collection_ref.document(doc_id).set(row)
-    print('Data written to Firestore!')
+    data, count = supabase.table('drug_reference').upsert(
+        df_to_upload.to_dict(orient='records')).execute()
+    print('Data written to Supabase!')
 else:
-    print('Nothing to write to Firestore')
+    print('Nothing to write to Supabase')
 
 # Save dataframe with latest information about medication use in sports to file
-doping_substances.to_csv('saved_in_firestore.csv', index=False)
+doping_substances.to_csv('saved_in_supabase.csv', index=False)
