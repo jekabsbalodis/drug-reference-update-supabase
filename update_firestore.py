@@ -35,8 +35,7 @@ human_products.fillna('', inplace=True)  # pylint: disable=E1101
 doping_substances = pd.read_csv(  # break up long string with r''
     r'https://data.gov.lv/dati/dataset/'
     r'3635a536-9b05-4a29-8695-31269d30e7b0/resource/'
-    r'ee8f9b14-1eee-494a-b7f5-6777a8232dcb/download'
-)
+    r'ee8f9b14-1eee-494a-b7f5-6777a8232dcb/download')
 
 # Drop products that are not currently registered
 doping_substances = doping_substances[doping_substances['authorisation_no'].isin(
