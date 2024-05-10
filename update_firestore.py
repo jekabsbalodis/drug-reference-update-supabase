@@ -70,24 +70,24 @@ except FileNotFoundError:
 
 df_to_upload.to_csv('to_upload.csv', index=False)
 
-# # Initialize Firebase app
-# cred = credentials.Certificate(
-#     'drug-reference-firebase-adminsdk.json')
-# firebase_admin.initialize_app(cred)
+# Initialize Firebase app
+cred = credentials.Certificate(
+    'drug-reference-firebase-adminsdk.json')
+firebase_admin.initialize_app(cred)
 
-# # Get firestore db instance
-# db = firestore.client()
+# Get firestore db instance
+db = firestore.client()
 
-# # Reference to Firestore collection
-# collection_ref = db.collection('drug_reference')
+# Reference to Firestore collection
+collection_ref = db.collection('drug_reference')
 
-# # Write data to Firestore
-# collection_ref = db.collection('drug_reference')
-# for row in df_to_upload.to_dict(orient='records'):
-#     doc_id = row['authorisation_no'].replace('/', '.')
-#     del row['authorisation_no']  # Remove ID from data dict
-#     collection_ref.document(doc_id).set(row)
+# Write data to Firestore
+collection_ref = db.collection('drug_reference')
 if not df_to_upload.empty:
+    for row in df_to_upload.to_dict(orient='records'):
+        doc_id = row['authorisation_no'].replace('/', '.')
+        del row['authorisation_no']  # Remove ID from data dict
+        collection_ref.document(doc_id).set(row)
     print('Data written to Firestore!')
 else:
     print('Nothing to write to Firestore')
