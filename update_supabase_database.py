@@ -18,7 +18,8 @@ human_products.drop_duplicates(  # pylint: disable=E1101
 human_products_columns = ['medicine_name',
                           'authorisation_no',
                           'pharmaceutical_form_lv',
-                          'active_substance']
+                          'active_substance',
+                          'short_name']
 human_products.drop(  # pylint: disable=E1101
     columns=[col for col in human_products if col not in human_products_columns],
     inplace=True)
@@ -60,6 +61,13 @@ missing_medication = human_products[~human_products['authorisation_no']
                                     .isin(doping_substances['authorisation_no'])]
 doping_substances = pd.concat(
     [doping_substances, missing_medication], ignore_index=True)
+
+# Add column 'short_name' to doping_substances
+doping_substances = pd.merge(left=doping_substances, right=human_products[[
+                             'authorisation_no', 'short_name']], on='authorisation_no', how='left')
+
+doping_substances.drop('short_name_x', axis=1, inplace=True)
+doping_substances.rename(columns={'short_name_y': 'short_name'}, inplace=True)
 
 # Fill empty cells with an empty string
 doping_substances.fillna('', inplace=True)
