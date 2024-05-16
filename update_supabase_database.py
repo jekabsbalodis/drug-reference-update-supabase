@@ -24,14 +24,12 @@ human_products.drop(  # pylint: disable=E1101
     columns=[col for col in human_products if col not in human_products_columns],
     inplace=True)
 
-
 # Split drug register between EU registerd and other drugs
 human_products_non_eu = human_products.drop(  # pylint: disable=E1101
     human_products[human_products['authorisation_no'].str.startswith('EU/')].index)
 
 human_products_eu = human_products.drop(  # pylint: disable=E1101
     human_products[~human_products['authorisation_no'].str.startswith('EU/')].index)
-
 
 # Drop duplicate values from EU registered medication
 human_products_eu.drop_duplicates(  # pylint: disable=E1101
@@ -62,12 +60,17 @@ missing_medication = human_products[~human_products['authorisation_no']
 doping_substances = pd.concat(
     [doping_substances, missing_medication], ignore_index=True)
 
-# Add column 'short_name' to doping_substances
-doping_substances = pd.merge(left=doping_substances, right=human_products[[
-                             'authorisation_no', 'short_name']], on='authorisation_no', how='left')
-
-doping_substances.drop('short_name_x', axis=1, inplace=True)
-doping_substances.rename(columns={'short_name_y': 'short_name'}, inplace=True)
+# Overwrite columns in doping_substances with data from human_products
+# and add column 'short_name' to doping_substances
+doping_substances = pd.merge(left=doping_substances, right=human_products[
+                             human_products_columns], on='authorisation_no', how='left')
+doping_substances.drop(columns=[
+                       col+'_x' for col in human_products_columns if col != 'authorisation_no'],
+                       axis=1, inplace=True)
+doping_substances.rename(columns={
+                         col+'_y': col for col in human_products_columns
+                         if col != 'authorisation_no'},
+                         inplace=True)
 
 # Fill empty cells with an empty string
 doping_substances.fillna('', inplace=True)
@@ -94,9 +97,8 @@ df_to_upload.to_csv('to_upload.csv', index=False)
 # Initialize Supabase client
 load_dotenv('.env')
 
-url = os.environ.get('SUPABASE_URL')
-key = os.environ.get('SUPABASE_KEY1') + \
-    os.environ.get('SUPABASE_KEY2')+os.environ.get('SUPABASE_KEY3')
+url: str = os.environ.get('SUPABASE_URL')  # type: ignore
+key: str = os.environ.get('SUPABASE_KEY')  # type: ignore
 supabase: Client = create_client(url, key)
 
 # Write data to Supabase
