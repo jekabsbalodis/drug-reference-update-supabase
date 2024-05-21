@@ -1,2 +1,2 @@
-# drug-reference-backend
-Backend for the drug reference app
+# Drug reference SupaBase update script
+Script for updataing SupaBase database for Drug Reference Flutter app
