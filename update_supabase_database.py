@@ -62,7 +62,7 @@ doping_substances = pd.concat(
     [doping_substances, missing_medication], ignore_index=True)
 
 # Overwrite columns in doping_substances with data from human_products
-# and add column 'short_name' to doping_substances
+# and add columns 'short_name' and 'strength_lv' to doping_substances
 doping_substances = pd.merge(left=doping_substances, right=human_products[
                              human_products_columns], on='authorisation_no', how='left')
 doping_substances.drop(columns=[
@@ -104,8 +104,8 @@ supabase: Client = create_client(url, key)
 
 # Write data to Supabase
 if not df_to_upload.empty:
-    # data, count = supabase.table('drug_reference').upsert(
-    #     df_to_upload.to_dict(orient='records')).execute()
+    data, count = supabase.table('drug_reference').upsert(
+        df_to_upload.to_dict(orient='records')).execute()
     print('Data written to Supabase!')
 else:
     print('Nothing to write to Supabase')
