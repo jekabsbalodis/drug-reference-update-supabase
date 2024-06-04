@@ -19,7 +19,8 @@ human_products_columns = ['medicine_name',
                           'authorisation_no',
                           'pharmaceutical_form_lv',
                           'active_substance',
-                          'short_name']
+                          'short_name',
+                          'strength_lv']
 human_products.drop(  # pylint: disable=E1101
     columns=[col for col in human_products if col not in human_products_columns],
     inplace=True)
@@ -33,7 +34,7 @@ human_products_eu = human_products.drop(  # pylint: disable=E1101
 
 # Drop duplicate values from EU registered medication
 human_products_eu.drop_duplicates(  # pylint: disable=E1101
-    subset=['medicine_name', 'pharmaceutical_form_lv'],
+    subset=['medicine_name', 'pharmaceutical_form_lv', 'strength_lv'],
     ignore_index=True,
     inplace=True)
 
@@ -103,8 +104,8 @@ supabase: Client = create_client(url, key)
 
 # Write data to Supabase
 if not df_to_upload.empty:
-    data, count = supabase.table('drug_reference').upsert(
-        df_to_upload.to_dict(orient='records')).execute()
+    # data, count = supabase.table('drug_reference').upsert(
+    #     df_to_upload.to_dict(orient='records')).execute()
     print('Data written to Supabase!')
 else:
     print('Nothing to write to Supabase')
